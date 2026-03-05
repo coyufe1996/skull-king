@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../stores/useGameStore';
 import { useSocket } from '../hooks/useSocket';
-import { Card as CardType, GameState } from '../../../shared/types';
+import { Card as CardType } from '../../../shared/types';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Crown } from 'lucide-react';
