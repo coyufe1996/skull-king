@@ -30,7 +30,10 @@ export const useSocket = () => {
 
     const onError = (err: { message: string }) => {
       console.error('Socket error:', err);
-      alert(err.message);
+      // Don't show alert for "No active game found" - it's expected when there's no active session
+      if (err.message !== 'No active game found') {
+        alert(err.message);
+      }
     };
 
     // Attach listeners
