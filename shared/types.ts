@@ -3,28 +3,35 @@
 export interface Card {
   id: string;
   type: 'suit' | 'special';
-  suit?: 'parrot' | 'map' | 'treasure' | 'jolly_roger'; // green, purple, yellow, black
+  suit?: 'parrot' | 'map' | 'treasure' | 'jolly_roger';
   value?: number; // 1-14
   specialType?: 'skull_king' | 'pirate' | 'mermaid' | 'escape' | 'tigress';
   playedAs?: 'escape' | 'pirate'; // For Tigress
 }
 
 export interface Player {
-  id: string;      // Socket ID
+  id: string;
   name: string;
-  hand: Card[];    // Cards in hand
-  bid: number;     // Bid for the round
-  tricksWon: number; // Tricks won in current round
-  score: number;   // Total score
+  hand: Card[];
+  bid: number; // -1 if not bid yet
+  tricksWon: number;
+  score: number;
   isReady: boolean;
 }
 
+export interface TableCard {
+  playerId: string;
+  card: Card;
+}
+
+export type GamePhase = 'lobby' | 'bidding' | 'playing' | 'ended';
+
 export interface GameState {
   roomId: string;
-  phase: 'lobby' | 'bidding' | 'playing' | 'scoring' | 'ended';
-  round: number;   // 1-10
+  phase: GamePhase;
+  round: number;
   players: Player[];
   currentTurnIndex: number;
-  tableCards: { playerId: string; card: Card }[];
+  tableCards: TableCard[];
   leadSuit: string | null;
 }
