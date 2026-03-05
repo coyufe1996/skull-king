@@ -1,49 +1,42 @@
-FROM node:20-bookworm-slim AS builder
-WORKDIR /app
-
-# Add node_modules/.bin to PATH to ensure binaries like tsc and vite are found
-ENV PATH /app/node_modules/.bin:$PATH
-
+FROM node:20-bookworm-slim AS client-builder
+WORKDIR /app/client
 ENV CI=true
-ENV npm_config_audit=false
-ENV npm_config_fund=false
-ENV npm_config_update_notifier=false
+ENV npm_config_registry=https://registry.npmjs.org/
 
-# Copy root configuration
-COPY .npmrc package.json package-lock.json* ./
+COPY .npmrc ../
+COPY shared/ ../shared/
+COPY client/package*.json ./
 
-# Copy workspace package.json files
-COPY client/package.json ./client/
-COPY server/package.json ./server/
+RUN npm install --no-audit --no-fund
 
-# Install dependencies (workspaces will install everything at root)
-RUN npm install
+COPY client/ ./
+RUN npm run build
 
-# Copy source code
-COPY shared/ ./shared/
-COPY client/ ./client/
-COPY server/ ./server/
 
-# Build client and server using absolute paths to binaries to avoid PATH issues
-RUN cd client && /app/node_modules/.bin/tsc && /app/node_modules/.bin/vite build
-RUN cd server && /app/node_modules/.bin/tsc
+FROM node:20-bookworm-slim AS server-builder
+WORKDIR /app/server
+ENV CI=true
+ENV npm_config_registry=https://registry.npmjs.org/
 
-# Runtime stage
+COPY .npmrc ../
+COPY shared/ ../shared/
+COPY server/package*.json ./
+
+RUN npm install --no-audit --no-fund
+
+COPY server/ ./
+RUN npm run build
+
+
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 
-# Copy built artifacts
-COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/client/dist ./client/dist
+COPY --from=server-builder /app/server/dist ./server/dist
+COPY --from=server-builder /app/server/package*.json ./server/
+COPY --from=server-builder /app/server/node_modules ./server/node_modules
+COPY --from=client-builder /app/client/dist ./client/dist
+COPY shared/ ./shared/
 
-# Copy package.json files for runtime reference
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/server/package.json ./server/
-
-# Copy node_modules (hoisted at root)
-COPY --from=builder /app/node_modules ./node_modules
-
-# Set permissions
 RUN chown -R 1000:1000 /app
 USER 1000
 
@@ -52,5 +45,4 @@ ENV PORT=7860
 ENV CLIENT_DIST_PATH=client/dist
 EXPOSE 7860
 
-# Start the server
 CMD ["node", "server/dist/server/src/index.js"]
