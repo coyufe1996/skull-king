@@ -1,23 +1,35 @@
 import { Card } from '../../../shared/types';
 
 export const checkCardPlayability = (card: Card, hand: Card[], leadSuit: string | null): boolean => {
-    // If no lead suit, any card is playable
-    if (!leadSuit) return true;
+    console.log('Checking playability:', { 
+        card, 
+        leadSuit, 
+        hand: hand.map(c => ({ type: c.type, suit: c.suit, specialType: c.specialType })) 
+    });
     
-    // Special cards can always be played
-    if (card.type === 'special') return true;
+    if (!leadSuit) {
+        console.log('No lead suit, any card playable');
+        return true;
+    }
+    
+    if (card.type === 'special') {
+        console.log('Special card, always playable');
+        return true;
+    }
 
-    // If card matches lead suit, it's playable
-    if (card.suit === leadSuit) return true;
+    if (card.suit === leadSuit) {
+        console.log('Card matches lead suit, playable');
+        return true;
+    }
 
-    // If player has lead suit in hand, they must play it
-    // Check if the player has any card of the lead suit in their hand
     const hasLeadSuit = hand.some(c => c.suit === leadSuit);
+    console.log('Has lead suit in hand:', hasLeadSuit);
+    
     if (hasLeadSuit) {
-        // If they do, they cannot play a non-matching suit card
+        console.log('Has lead suit, must play it');
         return false;
     }
 
-    // If player doesn't have lead suit, any card is playable
+    console.log('No lead suit in hand, can play anything');
     return true;
 };

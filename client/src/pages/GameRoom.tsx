@@ -90,9 +90,9 @@ const GameRoom: React.FC = () => {
       setShowTrickEndModal(true);
     };
 
-    const onRoundEnded = () => {
-      // Save current gameState as snapshot - it has the final scores for this round
-      setRoundEndSnapshot(JSON.parse(JSON.stringify(gameState)));
+    const onRoundEnded = ({ finalState }: { finalState: typeof gameState }) => {
+      // Save complete final state from server BEFORE resetting!
+      setRoundEndSnapshot(finalState);
       // If trick end modal is showing, wait for it to close first
       if (showTrickEndModal) {
         setPendingRoundEnd(true);
