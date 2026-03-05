@@ -14,6 +14,7 @@ RUN npm i -g npm@9.9.4
 
 COPY shared/ ./shared/
 COPY .npmrc ./
+COPY package.json ./
 
 COPY client/package.json ./client/
 COPY server/package.json ./server/
