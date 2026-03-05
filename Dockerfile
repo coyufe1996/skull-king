@@ -42,6 +42,7 @@ USER 1000
 
 ENV NODE_ENV=production
 ENV PORT=7860
+ENV CLIENT_DIST_PATH=client/dist
 EXPOSE 7860
 
 CMD ["node", "server/dist/server/src/index.js"]

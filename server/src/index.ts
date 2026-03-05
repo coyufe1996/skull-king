@@ -15,7 +15,10 @@ app.use(cors());
 
 // Serve static files from the React app only in production
 if (process.env.NODE_ENV === 'production') {
-  const clientDistPath = path.join(process.cwd(), '../client/dist');
+  const clientDistPath = process.env.CLIENT_DIST_PATH
+    ? path.resolve(process.cwd(), process.env.CLIENT_DIST_PATH)
+    : path.join(process.cwd(), '../client/dist');
+    
   app.use(express.static(clientDistPath));
 
   // Handle React routing, return all requests to React app
