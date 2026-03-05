@@ -1,3 +1,12 @@
+---
+title: Skull King Game
+emoji: ☠️
+colorFrom: yellow
+colorTo: red
+sdk: docker
+pinned: false
+---
+
 # Skull King Web Game (骷髅王网页版)
 
 A multiplayer trick-taking card game built with React, Node.js, and Socket.io.
