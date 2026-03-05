@@ -26,42 +26,54 @@ const GameRoom: React.FC = () => {
   const [pendingRoundEnd, setPendingRoundEnd] = useState(false);
   const [trickWinner, setTrickWinner] = useState<string | null>(null);
   const [trickCards, setTrickCards] = useState<PlayedCard[]>([]);
-  const [roundStartScores, setRoundStartScores] = useState<Record<string, number>>({});
+  const [roundStartState, setRoundStartState] = useState<{
+    players: Array<{ id: string; score: number; bid: number; tricksWon: number }>;
+    round: number;
+  } | null>(null);
+  const [currentRoundEndState, setCurrentRoundEndState] = useState<typeof gameState | null>(null);
 
   if (!gameState) return <div>加载中...</div>;
 
   // Helper to calculate score change and formula
-  const getScoreInfo = (player: typeof gameState.players[0], roundNum: number) => {
-    const prevScore = roundStartScores[player.id] || 0;
-    const scoreChange = player.score - prevScore;
-    const diff = Math.abs(player.bid - player.tricksWon);
+  const getScoreInfo = (finalPlayer: typeof gameState.players[0], roundNum: number) => {
+    const startPlayer = roundStartState?.players.find(p => p.id === finalPlayer.id);
+    const prevScore = startPlayer?.score || 0;
+    const scoreChange = finalPlayer.score - prevScore;
+    const startBid = startPlayer?.bid ?? finalPlayer.bid;
+    const startTricksWon = startPlayer?.tricksWon ?? finalPlayer.tricksWon;
+    const actualTricksWon = finalPlayer.tricksWon - startTricksWon;
+    const diff = Math.abs(startBid - actualTricksWon);
     
     let formula = '';
-    if (player.bid === 0) {
-      if (player.tricksWon === 0) {
+    if (startBid === 0) {
+      if (actualTricksWon === 0) {
         formula = `${roundNum} × 10`;
       } else {
         formula = `-${roundNum} × 10`;
       }
     } else {
-      if (player.bid === player.tricksWon) {
-        formula = `${player.tricksWon} × 20`;
+      if (startBid === actualTricksWon) {
+        formula = `${actualTricksWon} × 20`;
       } else {
         formula = `-${diff} × 10`;
       }
     }
     
-    return { prevScore, scoreChange, formula, diff };
+    return { prevScore, scoreChange, formula, diff, startBid, actualTricksWon };
   };
 
-  // Track round start scores when round starts (bidding phase)
+  // Track round start state when round starts (bidding phase)
   useEffect(() => {
     if (gameState && gameState.phase === 'bidding') {
-      const scores: Record<string, number> = {};
-      gameState.players.forEach(p => {
-        scores[p.id] = p.score;
+      setRoundStartState({
+        players: gameState.players.map(p => ({
+          id: p.id,
+          score: p.score,
+          bid: p.bid,
+          tricksWon: p.tricksWon
+        })),
+        round: gameState.round
       });
-      setRoundStartScores(scores);
     }
   }, [gameState?.phase, gameState?.round]);
 
@@ -73,20 +85,10 @@ const GameRoom: React.FC = () => {
       setTrickWinner(winnerId);
       setTrickCards(tableCards);
       setShowTrickEndModal(true);
-      
-      // Check if this is the last trick (hand will be empty after this)
-      // Save current scores now before they get updated in the next step
-      const currentPlayer = gameState.players.find(p => p.name === playerName);
-      if (currentPlayer && currentPlayer.hand.length === 1) {
-        const scores: Record<string, number> = {};
-        gameState.players.forEach(p => {
-          scores[p.id] = p.score;
-        });
-        setRoundStartScores(scores);
-      }
     };
 
-    const onRoundEnded = (_room: GameState) => {
+    const onRoundEnded = (room: GameState) => {
+      setCurrentRoundEndState(room);
       // If trick end modal is showing, wait for it to close first
       if (showTrickEndModal) {
         setPendingRoundEnd(true);
@@ -363,21 +365,20 @@ const GameRoom: React.FC = () => {
         )}
         
         {/* Round End Modal */}
-        {showRoundEndModal && (
+        {showRoundEndModal && currentRoundEndState && roundStartState && (
             <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50">
                 <div className="bg-slate-800 p-8 rounded-xl border border-blue-500 max-w-3xl w-full text-center shadow-2xl">
-                    <h2 className="text-4xl font-bold text-blue-400 mb-2">第 {gameState.round - 1} 回合结束!</h2>
-                    <p className="text-lg text-slate-300 mb-6">准备进入第 {gameState.round} 回合</p>
+                    <h2 className="text-4xl font-bold text-blue-400 mb-2">第 {roundStartState.round} 回合结束!</h2>
+                    <p className="text-lg text-slate-300 mb-6">准备进入第 {roundStartState.round + 1} 回合</p>
                     
                     <div className="bg-slate-900 rounded-lg p-6 mb-6">
                         <h3 className="text-xl font-bold mb-4 text-slate-200">本回合结果 & 排名:</h3>
                         <div className="space-y-3">
-                            {[...gameState.players]
+                            {[...currentRoundEndState.players]
                                 .sort((a, b) => b.score - a.score)
                                 .map((player, rank) => {
-                                    const currentRound = gameState.round - 1;
-                                    const { prevScore, scoreChange, formula, diff } = getScoreInfo(player, currentRound);
-                                    const madeBid = player.tricksWon === player.bid;
+                                    const { prevScore, scoreChange, formula, diff, startBid, actualTricksWon } = getScoreInfo(player, roundStartState.round);
+                                    const madeBid = startBid === actualTricksWon;
                                     return (
                                         <div key={player.id} className={`flex justify-between items-center p-4 rounded-lg ${madeBid ? 'bg-green-900/30 border border-green-700' : 'bg-red-900/30 border border-red-700'}`}>
                                             <div className="flex items-center gap-4">
@@ -388,8 +389,8 @@ const GameRoom: React.FC = () => {
                                                 <div className="text-left">
                                                     <span className="font-bold text-lg">{player.name}</span>
                                                     <div className="text-xs text-slate-400">
-                                                        叫分: <span className="text-yellow-400 font-bold">{player.bid}</span> | 
-                                                        赢得: <span className="text-green-400 font-bold">{player.tricksWon}</span>
+                                                        叫分: <span className="text-yellow-400 font-bold">{startBid}</span> | 
+                                                        赢得: <span className="text-green-400 font-bold">{actualTricksWon}</span>
                                                         {!madeBid && <span className="text-red-400 ml-2">(差 {diff} 墩)</span>}
                                                     </div>
                                                     <div className="text-xs text-slate-500 font-mono mt-1">
@@ -417,6 +418,7 @@ const GameRoom: React.FC = () => {
                     <button 
                         onClick={() => {
                             setShowRoundEndModal(false);
+                            setCurrentRoundEndState(null);
                         }}
                         className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xl transition-colors shadow-lg shadow-blue-900/50"
                     >
