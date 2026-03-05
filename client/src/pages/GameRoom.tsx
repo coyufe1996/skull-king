@@ -30,7 +30,8 @@ const GameRoom: React.FC = () => {
     players: Array<{ id: string; score: number; bid: number; tricksWon: number }>;
     round: number;
   } | null>(null);
-  const [currentRoundEndState, setCurrentRoundEndState] = useState<typeof gameState | null>(null);
+  // Save a snapshot of gameState when round_ended event arrives
+  const [roundEndSnapshot, setRoundEndSnapshot] = useState<typeof gameState | null>(null);
 
   if (!gameState) return <div>加载中...</div>;
 
@@ -39,9 +40,22 @@ const GameRoom: React.FC = () => {
     const startPlayer = roundStartState?.players.find(p => p.id === finalPlayer.id);
     const prevScore = startPlayer?.score || 0;
     const scoreChange = finalPlayer.score - prevScore;
-    const startBid = startPlayer?.bid ?? finalPlayer.bid;
-    const startTricksWon = startPlayer?.tricksWon ?? finalPlayer.tricksWon;
-    const actualTricksWon = finalPlayer.tricksWon - startTricksWon;
+    const startBid = startPlayer?.bid;
+    const startTricksWon = startPlayer?.tricksWon ?? 0;
+    
+    // Safety check: if we don't have startBid, show default values
+    if (startBid === undefined || startBid === -1) {
+      return { 
+        prevScore, 
+        scoreChange, 
+        formula: '?', 
+        diff: 0, 
+        startBid: 0, 
+        actualTricksWon: 0 
+      };
+    }
+    
+    const actualTricksWon = Math.max(0, finalPlayer.tricksWon - startTricksWon);
     const diff = Math.abs(startBid - actualTricksWon);
     
     let formula = '';
@@ -87,8 +101,9 @@ const GameRoom: React.FC = () => {
       setShowTrickEndModal(true);
     };
 
-    const onRoundEnded = (room: GameState) => {
-      setCurrentRoundEndState(room);
+    const onRoundEnded = () => {
+      // Save current gameState as snapshot - it has the final scores for this round
+      setRoundEndSnapshot(JSON.parse(JSON.stringify(gameState)));
       // If trick end modal is showing, wait for it to close first
       if (showTrickEndModal) {
         setPendingRoundEnd(true);
@@ -104,7 +119,7 @@ const GameRoom: React.FC = () => {
       socket.off('trick_end', onTrickEnd);
       socket.off('round_ended', onRoundEnded);
     };
-  }, [socket, showTrickEndModal, gameState, playerName]);
+  }, [socket, showTrickEndModal, gameState]);
 
   // Handle trick end modal close
   const handleTrickEndClose = () => {
@@ -365,7 +380,7 @@ const GameRoom: React.FC = () => {
         )}
         
         {/* Round End Modal */}
-        {showRoundEndModal && currentRoundEndState && roundStartState && (
+        {showRoundEndModal && roundEndSnapshot && roundStartState && (
             <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50">
                 <div className="bg-slate-800 p-8 rounded-xl border border-blue-500 max-w-3xl w-full text-center shadow-2xl">
                     <h2 className="text-4xl font-bold text-blue-400 mb-2">第 {roundStartState.round} 回合结束!</h2>
@@ -374,7 +389,7 @@ const GameRoom: React.FC = () => {
                     <div className="bg-slate-900 rounded-lg p-6 mb-6">
                         <h3 className="text-xl font-bold mb-4 text-slate-200">本回合结果 & 排名:</h3>
                         <div className="space-y-3">
-                            {[...currentRoundEndState.players]
+                            {[...roundEndSnapshot.players]
                                 .sort((a, b) => b.score - a.score)
                                 .map((player, rank) => {
                                     const { prevScore, scoreChange, formula, diff, startBid, actualTricksWon } = getScoreInfo(player, roundStartState.round);
@@ -418,7 +433,7 @@ const GameRoom: React.FC = () => {
                     <button 
                         onClick={() => {
                             setShowRoundEndModal(false);
-                            setCurrentRoundEndState(null);
+                            setRoundEndSnapshot(null);
                         }}
                         className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xl transition-colors shadow-lg shadow-blue-900/50"
                     >

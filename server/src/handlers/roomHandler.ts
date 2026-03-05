@@ -162,9 +162,8 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
                           // First, calculate scores only
                           gameLogic.calculateScores(room);
                           
-                          // Send round_ended with the final scores of this round
-                          const roomBeforeReset = JSON.parse(JSON.stringify(room));
-                          io.to(roomId).emit('round_ended', roomBeforeReset);
+                          // Send round_ended - just a notification, client will save its own snapshot
+                          io.to(roomId).emit('round_ended');
                           
                           // Now proceed to end the round and reset for next
                           const isGameOver = gameLogic.finishRoundAndReset(room);
@@ -247,9 +246,8 @@ function handleBotTurn(io: Server, roomId: string, roomManager: RoomManager) {
                             // First, calculate scores only
                             gameLogic.calculateScores(room);
                             
-                            // Send round_ended with the final scores of this round
-                            const roomBeforeReset = JSON.parse(JSON.stringify(room));
-                            io.to(roomId).emit('round_ended', roomBeforeReset);
+                            // Send round_ended - just a notification
+                            io.to(roomId).emit('round_ended');
                             
                             // Now proceed to end the round and reset for next
                             const isGameOver = gameLogic.finishRoundAndReset(room);
