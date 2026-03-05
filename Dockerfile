@@ -30,10 +30,17 @@ COPY --from=server-builder /app/server/node_modules ./server/node_modules
 # Copy built client static files
 COPY --from=client-builder /app/client/dist ./client/dist
 
-# Expose port
-EXPOSE 3001
+# Set permissions for Hugging Face Spaces (optional but good practice)
+RUN mkdir -p /app/server/dist && chown -R 1000:1000 /app
+
+# Switch to non-root user (Hugging Face default)
+USER 1000
+
+# Expose port 7860 (Hugging Face default)
+EXPOSE 7860
 
 # Start server
 WORKDIR /app/server
 ENV NODE_ENV=production
+ENV PORT=7860
 CMD ["node", "dist/server/src/index.js"]
