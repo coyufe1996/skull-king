@@ -1,7 +1,7 @@
 # Dockerfile for Skull King Monorepo
 
 # Stage 1: Build Client
-FROM node:18-alpine as client-builder
+FROM node:20-alpine as client-builder
 WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm install
@@ -10,7 +10,7 @@ COPY shared/ ../shared/
 RUN npm run build
 
 # Stage 2: Build Server
-FROM node:18-alpine as server-builder
+FROM node:20-alpine as server-builder
 WORKDIR /app/server
 COPY server/package*.json ./
 RUN npm install
@@ -19,7 +19,7 @@ COPY shared/ ../shared/
 RUN npm run build
 
 # Stage 3: Production Runtime
-FROM node:18-alpine
+FROM node:20-alpine
 WORKDIR /app
 
 # Copy built server
