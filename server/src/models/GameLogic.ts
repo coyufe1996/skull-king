@@ -146,8 +146,8 @@ export class GameLogic {
     return true;
   }
 
-  resolveTrick(room: GameState): string {
-    // Determine winner
+  determineTrickWinner(room: GameState): string {
+    // Determine winner without updating scores
     let winnerId = room.tableCards[0].playerId;
     let highestCard = room.tableCards[0].card;
 
@@ -159,7 +159,11 @@ export class GameLogic {
         }
     }
     
-    // Update trick counts
+    return winnerId;
+  }
+
+  resolveTrickWithWinner(room: GameState, winnerId: string): void {
+    // Update trick counts and set next leader using pre-determined winner
     const winner = room.players.find(p => p.id === winnerId);
     if (winner) {
         winner.tricksWon++;
@@ -168,7 +172,12 @@ export class GameLogic {
     // Set next leader
     const winnerIndex = room.players.findIndex(p => p.id === winnerId);
     room.currentTurnIndex = winnerIndex;
-    
+  }
+
+  resolveTrick(room: GameState): string {
+    // Original method for backward compatibility
+    const winnerId = this.determineTrickWinner(room);
+    this.resolveTrickWithWinner(room, winnerId);
     return winnerId;
   }
 

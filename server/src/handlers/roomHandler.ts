@@ -143,13 +143,17 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
               
               // Check if trick is complete
               if (room.tableCards.length === room.players.length) {
+                  // First, find the winner but don't update scores yet
+                  const winnerId = gameLogic.determineTrickWinner(room);
+                  io.to(roomId).emit('trick_end', { winnerId });
+                  
                   setTimeout(() => {
-                      const winnerId = gameLogic.resolveTrick(room);
+                      // Now resolve the trick (update scores, etc.)
+                      gameLogic.resolveTrickWithWinner(room, winnerId);
                       // Clear table
                       room.tableCards = [];
                       room.leadSuit = null;
                       
-                      io.to(roomId).emit('trick_end', { winnerId });
                       io.to(roomId).emit('room_update', room);
 
                       // Check if round is complete (hand empty)
@@ -221,12 +225,14 @@ function handleBotTurn(io: Server, roomId: string, roomManager: RoomManager) {
 
                 // Recursively check logic (same as socket event)
                 if (room.tableCards.length === room.players.length) {
+                    const winnerId = gameLogic.determineTrickWinner(room);
+                    io.to(roomId).emit('trick_end', { winnerId });
+                    
                     setTimeout(() => {
-                        const winnerId = gameLogic.resolveTrick(room);
+                        gameLogic.resolveTrickWithWinner(room, winnerId);
                         room.tableCards = [];
                         room.leadSuit = null;
                         
-                        io.to(roomId).emit('trick_end', { winnerId });
                         io.to(roomId).emit('room_update', room);
                         
                         if (room.players[0].hand.length === 0) {

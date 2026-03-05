@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../stores/useGameStore';
 import { useSocket } from '../hooks/useSocket';
-import { Card as CardType } from '../../../shared/types';
+import { Card as CardType, GameState, Player } from '../../../shared/types';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Crown } from 'lucide-react';
@@ -14,8 +14,47 @@ const GameRoom: React.FC = () => {
   const [myBid, setMyBid] = useState<number>(0);
   const [showTigressModal, setShowTigressModal] = useState<boolean>(false);
   const [selectedTigressCard, setSelectedTigressCard] = useState<CardType | null>(null);
+  
+  // Modal states for end of trick/round
+  const [showTrickEndModal, setShowTrickEndModal] = useState(false);
+  const [showRoundEndModal, setShowRoundEndModal] = useState(false);
+  const [trickWinner, setTrickWinner] = useState<string | null>(null);
+  const [previousScores, setPreviousScores] = useState<Record<string, number>>({});
 
   if (!gameState) return <div>加载中...</div>;
+
+  // Track score changes
+  useEffect(() => {
+    if (gameState) {
+      const scores: Record<string, number> = {};
+      gameState.players.forEach(p => {
+        scores[p.id] = p.score;
+      });
+      setPreviousScores(scores);
+    }
+  }, []);
+
+  // Set up socket listeners for trick/round end
+  useEffect(() => {
+    if (!socket) return;
+
+    const onTrickEnd = ({ winnerId }: { winnerId: string }) => {
+      setTrickWinner(winnerId);
+      setShowTrickEndModal(true);
+    };
+
+    const onRoundEnded = (room: GameState) => {
+      setShowRoundEndModal(true);
+    };
+
+    socket.on('trick_end', onTrickEnd);
+    socket.on('round_ended', onRoundEnded);
+
+    return () => {
+      socket.off('trick_end', onTrickEnd);
+      socket.off('round_ended', onRoundEnded);
+    };
+  }, [socket]);
 
   const currentPlayer = gameState.players.find(p => p.name === playerName);
   const isHost = gameState.players[0].name === playerName;
@@ -222,6 +261,102 @@ const GameRoom: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        )}
+        
+        {/* Trick End Modal */}
+        {showTrickEndModal && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+                <div className="bg-slate-800 p-8 rounded-xl border border-green-500 max-w-lg w-full text-center shadow-2xl">
+                    <h2 className="text-3xl font-bold text-green-400 mb-6">🎉 一墩结束!</h2>
+                    <p className="text-xl mb-4">
+                        <span className="text-yellow-400 font-bold">{gameState.players.find(p => p.id === trickWinner)?.name}</span> 赢得了这墩!
+                    </p>
+                    
+                    <div className="bg-slate-900 rounded-lg p-4 mb-6">
+                        <h3 className="text-lg font-bold mb-3 text-slate-300">当前得分情况:</h3>
+                        <div className="space-y-2">
+                            {gameState.players.map((player) => {
+                                const prevScore = previousScores[player.id] || 0;
+                                const scoreChange = player.score - prevScore;
+                                return (
+                                    <div key={player.id} className="flex justify-between items-center text-sm">
+                                        <span className={player.id === trickWinner ? 'text-yellow-400 font-bold' : 'text-slate-300'}>
+                                            {player.name}
+                                        </span>
+                                        <span className="font-mono">
+                                            <span className="text-slate-400">{prevScore}</span>
+                                            {scoreChange > 0 && <span className="text-green-400 ml-2">+{scoreChange}</span>}
+                                            {scoreChange < 0 && <span className="text-red-400 ml-2">{scoreChange}</span>}
+                                            <span className="text-purple-400 ml-2">→ {player.score}</span>
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={() => setShowTrickEndModal(false)}
+                        className="w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg text-xl transition-colors shadow-lg shadow-green-900/50"
+                    >
+                        继续游戏
+                    </button>
+                </div>
+            </div>
+        )}
+        
+        {/* Round End Modal */}
+        {showRoundEndModal && (
+            <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-50">
+                <div className="bg-slate-800 p-8 rounded-xl border border-blue-500 max-w-2xl w-full text-center shadow-2xl">
+                    <h2 className="text-4xl font-bold text-blue-400 mb-2">第 {gameState.round - 1} 回合结束!</h2>
+                    <p className="text-lg text-slate-300 mb-6">准备进入第 {gameState.round} 回合</p>
+                    
+                    <div className="bg-slate-900 rounded-lg p-6 mb-6">
+                        <h3 className="text-xl font-bold mb-4 text-slate-200">本回合结果:</h3>
+                        <div className="space-y-3">
+                            {gameState.players.map((player) => {
+                                const prevScore = previousScores[player.id] || 0;
+                                const scoreChange = player.score - prevScore;
+                                const madeBid = player.tricksWon === player.bid;
+                                return (
+                                    <div key={player.id} className={`flex justify-between items-center p-3 rounded-lg ${madeBid ? 'bg-green-900/30 border border-green-700' : 'bg-red-900/30 border border-red-700'}`}>
+                                        <div className="text-left">
+                                            <span className="font-bold text-lg">{player.name}</span>
+                                            <div className="text-xs text-slate-400">
+                                                叫分: <span className="text-yellow-400 font-bold">{player.bid}</span> | 
+                                                赢得: <span className="text-green-400 font-bold">{player.tricksWon}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right font-mono">
+                                            <div className="text-lg">
+                                                {scoreChange > 0 && <span className="text-green-400">+{scoreChange}</span>}
+                                                {scoreChange < 0 && <span className="text-red-400">{scoreChange}</span>}
+                                                {scoreChange === 0 && <span className="text-slate-400">±0</span>}
+                                            </div>
+                                            <div className="text-sm text-purple-400">总分: {player.score}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={() => {
+                            setShowRoundEndModal(false);
+                            const scores: Record<string, number> = {};
+                            gameState.players.forEach(p => {
+                                scores[p.id] = p.score;
+                            });
+                            setPreviousScores(scores);
+                        }}
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xl transition-colors shadow-lg shadow-blue-900/50"
+                    >
+                        进入下一回合
+                    </button>
                 </div>
             </div>
         )}
