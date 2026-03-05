@@ -1,6 +1,9 @@
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
+# Add node_modules/.bin to PATH to ensure binaries like tsc and vite are found
+ENV PATH /app/node_modules/.bin:$PATH
+
 ENV CI=true
 ENV npm_config_audit=false
 ENV npm_config_fund=false
