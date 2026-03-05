@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../stores/useGameStore';
 import { useSocket } from '../hooks/useSocket';
-import { Card as CardType, GameState, Player } from '../../../shared/types';
+import { Card as CardType, GameState } from '../../../shared/types';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/Card';
 import { Crown } from 'lucide-react';
@@ -43,7 +43,7 @@ const GameRoom: React.FC = () => {
       setShowTrickEndModal(true);
     };
 
-    const onRoundEnded = (room: GameState) => {
+    const onRoundEnded = (_room: GameState) => {
       setShowRoundEndModal(true);
     };
 
