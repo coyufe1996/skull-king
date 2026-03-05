@@ -4,6 +4,7 @@ ENV CI=true
 ENV npm_config_registry=https://registry.npmjs.org/
 
 COPY .npmrc ../
+COPY package.json ../
 COPY shared/ ../shared/
 COPY client/package*.json ./
 
@@ -19,6 +20,7 @@ ENV CI=true
 ENV npm_config_registry=https://registry.npmjs.org/
 
 COPY .npmrc ../
+COPY package.json ../
 COPY shared/ ../shared/
 COPY server/package*.json ./
 
@@ -35,6 +37,7 @@ COPY --from=server-builder /app/server/dist ./server/dist
 COPY --from=server-builder /app/server/package*.json ./server/
 COPY --from=server-builder /app/server/node_modules ./server/node_modules
 COPY --from=client-builder /app/client/dist ./client/dist
+COPY --from=client-builder /app/package.json ./
 COPY shared/ ./shared/
 
 RUN chown -R 1000:1000 /app
