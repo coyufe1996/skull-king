@@ -159,11 +159,18 @@ export const registerRoomHandlers = (io: Server, socket: Socket, roomManager: Ro
 
                       // Check if round is complete (hand empty)
                       if (room.players[0].hand.length === 0) {
-                          const isGameOver = gameLogic.endRound(room);
+                          // First, calculate scores only
+                          gameLogic.calculateScores(room);
+                          
+                          // Send round_ended with the final scores of this round
+                          const roomBeforeReset = JSON.parse(JSON.stringify(room));
+                          io.to(roomId).emit('round_ended', roomBeforeReset);
+                          
+                          // Now proceed to end the round and reset for next
+                          const isGameOver = gameLogic.finishRoundAndReset(room);
                           if (isGameOver) {
                               io.to(roomId).emit('game_ended', room);
                           } else {
-                              io.to(roomId).emit('round_ended', room);
                               // Next round bidding phase started
                               handleBotBids(io, roomId, roomManager);
                           }
@@ -237,11 +244,18 @@ function handleBotTurn(io: Server, roomId: string, roomManager: RoomManager) {
                         io.to(roomId).emit('room_update', room);
                         
                         if (room.players[0].hand.length === 0) {
-                            const isGameOver = gameLogic.endRound(room);
+                            // First, calculate scores only
+                            gameLogic.calculateScores(room);
+                            
+                            // Send round_ended with the final scores of this round
+                            const roomBeforeReset = JSON.parse(JSON.stringify(room));
+                            io.to(roomId).emit('round_ended', roomBeforeReset);
+                            
+                            // Now proceed to end the round and reset for next
+                            const isGameOver = gameLogic.finishRoundAndReset(room);
                             if (isGameOver) {
                                 io.to(roomId).emit('game_ended', room);
                             } else {
-                                io.to(roomId).emit('round_ended', room);
                                 handleBotBids(io, roomId, roomManager);
                             }
                             io.to(roomId).emit('room_update', room);

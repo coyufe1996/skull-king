@@ -280,13 +280,31 @@ export class GameLogic {
     });
   }
 
+  // New method: finish round without resetting (for backward compatibility)
   endRound(room: GameState): boolean {
     this.calculateScores(room);
     
     // Check if game ends
     if (room.round >= 10) {
-        room.phase = 'ended';
-        return true; // Game Over
+      room.phase = 'ended';
+      return true; // Game Over
+    }
+
+    // Start next round
+    room.round++;
+    room.phase = 'bidding';
+    this.startRound(room);
+    return false; // Continue
+  }
+  
+  // New method: calculate scores and then reset for next round
+  finishRoundAndReset(room: GameState): boolean {
+    // Scores already calculated by calculateScores() before this is called
+    
+    // Check if game ends
+    if (room.round >= 10) {
+      room.phase = 'ended';
+      return true; // Game Over
     }
 
     // Start next round
