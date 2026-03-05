@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { GameState, Player } from '../../../shared/types';
-import { v4 as uuidv4 } from 'uuid';
+import { GameState } from '../../../shared/types';
 
 interface GameStore {
   gameState: GameState | null;
@@ -13,11 +12,14 @@ interface GameStore {
 }
 
 const getUserId = () => {
-  let id = localStorage.getItem('skull_king_user_id');
-  if (!id) {
-    id = uuidv4();
-    localStorage.setItem('skull_king_user_id', id);
-  }
+  const existing = localStorage.getItem('skull_king_user_id');
+  if (existing) return existing;
+
+  const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+  localStorage.setItem('skull_king_user_id', id);
   return id;
 };
 

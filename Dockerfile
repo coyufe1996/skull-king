@@ -1,45 +1,50 @@
-# Dockerfile for Skull King Monorepo
+# Dockerfile for Skull King
+#
+# Notes for Hugging Face Docker Spaces:
+# - Your app must listen on port 7860.
+# - Alpine images have shown flaky npm behavior on Spaces; use Debian slim.
 
-# Stage 1: Build Client
-FROM node:20-alpine as client-builder
+FROM node:20-bookworm-slim AS base
+
+ENV CI=true
+ENV npm_config_audit=false
+ENV npm_config_fund=false
+ENV npm_config_update_notifier=false
+
+RUN npm i -g npm@11.11.0
+
+
+FROM base AS client-builder
 WORKDIR /app
 COPY shared/ ./shared/
 COPY client/package*.json ./client/
-RUN cd client && npm install
+RUN cd client && npm ci
 COPY client/ ./client/
 RUN cd client && npm run build
 
-# Stage 2: Build Server
-FROM node:20-alpine as server-builder
+
+FROM base AS server-builder
 WORKDIR /app
 COPY shared/ ./shared/
 COPY server/package*.json ./server/
-RUN cd server && npm install
+RUN cd server && npm ci
 COPY server/ ./server/
 RUN cd server && npm run build
 
-# Stage 3: Production Runtime
-FROM node:20-alpine
+
+FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 
-# Copy built server
 COPY --from=server-builder /app/server/dist ./server/dist
 COPY --from=server-builder /app/server/package*.json ./server/
 COPY --from=server-builder /app/server/node_modules ./server/node_modules
-
-# Copy built client static files
 COPY --from=client-builder /app/client/dist ./client/dist
 
-# Set permissions
 RUN chown -R 1000:1000 /app
-
-# Switch to non-root user
 USER 1000
 
-# Expose port 7860
-EXPOSE 7860
-
-# Start server
 ENV NODE_ENV=production
 ENV PORT=7860
+EXPOSE 7860
+
 CMD ["node", "server/dist/server/src/index.js"]

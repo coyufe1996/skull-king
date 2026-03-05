@@ -4,6 +4,7 @@ emoji: ☠️
 colorFrom: yellow
 colorTo: red
 sdk: docker
+app_port: 7860
 pinned: false
 ---
 
@@ -20,7 +21,7 @@ Skull King is a trick-taking game where players bid on how many tricks they will
   - **Pirate**: Beats all suits and Jolly Roger.
   - **Skull King**: Beats everything EXCEPT Mermaid.
   - **Mermaid**: Beats all suits and Jolly Roger. Beats Skull King if played in same trick.
-  - **Tigress**: Can be played as Escape or Pirate (Simplified to Pirate for now).
+- **Tigress**: Can be played as Escape or Pirate.
 
 ## 🛠 Tech Stack
 - **Frontend**: React, Vite, Tailwind CSS, Zustand
@@ -42,7 +43,7 @@ Skull King is a trick-taking game where players bid on how many tricks they will
    - Client: http://localhost:5173
    - Server: http://localhost:3001
 
-## 📦 Deployment Guide (Render.com)
+## 📦 Deployment Guide
 
 This project is set up as a Monorepo, which makes it easy to deploy on Render.com as a **Web Service**.
 
@@ -58,12 +59,11 @@ This project is set up as a Monorepo, which makes it easy to deploy on Render.co
    - **Start Command**: `npm start`
    - **Root Directory**: `.` (default)
 
-4.52→4. **Environment Variables**:
-53→   - `NODE_ENV`: `production`
-54→   - `PORT`: `10000` (Render default)
-55→   - `VITE_SOCKET_URL`: (Optional) Leave empty to connect to the same host (recommended for monorepo).
-56→
-57→### Option 2: Deploy Client and Server Separately
+4. **Environment Variables**:
+   - `NODE_ENV`: `production`
+   - `PORT`: `10000` (Render default)
+
+### Option 2: Deploy Client and Server Separately
 
 **Server (Web Service)**:
 - Root Directory: `server`

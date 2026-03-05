@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useGameStore } from '../stores/useGameStore';
 import { useSocket } from '../hooks/useSocket';
 import { Card as CardType } from '../../../shared/types';

@@ -55,27 +55,27 @@ const Rules: React.FC = () => {
                     <h3 className="text-xl font-bold text-yellow-400 mb-2">特殊牌 (Special Cards)</h3>
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="flex flex-col items-center">
-                            <Card card={{id: 'demo_esc', type: 'special', specialType: 'escape', suit: 'none', value: 0}} size="sm" />
+                            <Card card={{id: 'demo_esc', type: 'special', specialType: 'escape', value: 0}} size="sm" />
                             <span className="font-bold mt-1">撤退 (Escape)</span>
                             <span className="text-xs text-center">数值为0，总是输，除非全出撤退</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <Card card={{id: 'demo_pir', type: 'special', specialType: 'pirate', suit: 'none', value: 0}} size="sm" />
+                            <Card card={{id: 'demo_pir', type: 'special', specialType: 'pirate', value: 0}} size="sm" />
                             <span className="font-bold mt-1 text-red-400">海盗 (Pirate)</span>
                             <span className="text-xs text-center">赢过所有花色和王牌</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <Card card={{id: 'demo_sk', type: 'special', specialType: 'skull_king', suit: 'none', value: 0}} size="sm" />
+                            <Card card={{id: 'demo_sk', type: 'special', specialType: 'skull_king', value: 0}} size="sm" />
                             <span className="font-bold mt-1 text-yellow-500">骷髅王</span>
                             <span className="text-xs text-center">最大的牌！但这能被美人鱼杀掉</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <Card card={{id: 'demo_mer', type: 'special', specialType: 'mermaid', suit: 'none', value: 0}} size="sm" />
+                            <Card card={{id: 'demo_mer', type: 'special', specialType: 'mermaid', value: 0}} size="sm" />
                             <span className="font-bold mt-1 text-cyan-400">美人鱼</span>
                             <span className="text-xs text-center">赢过花色和王牌，且能杀骷髅王</span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <Card card={{id: 'demo_tig', type: 'special', specialType: 'tigress', suit: 'none', value: 0}} size="sm" />
+                            <Card card={{id: 'demo_tig', type: 'special', specialType: 'tigress', value: 0}} size="sm" />
                             <span className="font-bold mt-1 text-orange-400">母老虎</span>
                             <span className="text-xs text-center">可当撤退或海盗出</span>
                         </div>

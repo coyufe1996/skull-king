@@ -12,7 +12,6 @@ import {
   Cat,
   HelpCircle
 } from 'lucide-react';
-import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 interface CardProps {
@@ -24,6 +23,8 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ card, className, onClick, isPlayable = false, size = 'md' }) => {
+  const suitValueText = card.type === 'suit' ? String(card.value ?? '') : '';
+
   const getCardStyle = () => {
     switch (card.suit) {
       case 'parrot': return 'bg-green-100 border-green-600 text-green-800';
@@ -63,7 +64,7 @@ export const Card: React.FC<CardProps> = ({ card, className, onClick, isPlayable
   };
 
   const getLabel = () => {
-    if (card.type === 'suit') return card.value.toString();
+    if (card.type === 'suit') return String(card.value ?? '?');
     switch (card.specialType) {
         case 'escape': return '撤退';
         case 'pirate': return '海盗';
@@ -87,11 +88,11 @@ export const Card: React.FC<CardProps> = ({ card, className, onClick, isPlayable
         'relative rounded-xl border-2 flex flex-col items-center justify-center p-2 shadow-md transition-all duration-200 select-none',
         sizeClasses[size],
         getCardStyle(),
-        isPlayable ? 'cursor-pointer hover:-translate-y-2 hover:shadow-xl' : '',
+        isPlayable ? 'cursor-pointer hover:-translate-y-2 hover:shadow-xl' : 'opacity-60',
         className
       )}
     >
-      <div className="absolute top-2 left-2 font-bold opacity-50">{card.type === 'suit' ? card.value : ''}</div>
+      <div className="absolute top-2 left-2 font-bold opacity-50">{suitValueText}</div>
       <div className="flex-1 flex items-center justify-center">
         {getIcon()}
       </div>
@@ -99,7 +100,7 @@ export const Card: React.FC<CardProps> = ({ card, className, onClick, isPlayable
         {getLabel()}
       </div>
       {card.type === 'suit' && (
-         <div className="absolute bottom-2 right-2 font-bold opacity-50 rotate-180">{card.value}</div>
+         <div className="absolute bottom-2 right-2 font-bold opacity-50 rotate-180">{suitValueText}</div>
       )}
     </div>
   );
