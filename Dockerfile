@@ -24,9 +24,9 @@ COPY shared/ ./shared/
 COPY client/ ./client/
 COPY server/ ./server/
 
-# Build client and server
-# Explicitly use npx to run commands from root node_modules if PATH is not picking it up correctly
-RUN npm run build --workspaces --if-present
+# Build client and server using absolute paths to binaries to avoid PATH issues
+RUN cd client && /app/node_modules/.bin/tsc && /app/node_modules/.bin/vite build
+RUN cd server && /app/node_modules/.bin/tsc
 
 # Runtime stage
 FROM node:20-bookworm-slim AS runtime
