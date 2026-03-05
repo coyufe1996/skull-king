@@ -25,7 +25,8 @@ COPY client/ ./client/
 COPY server/ ./server/
 
 # Build client and server
-RUN npm run build
+# Explicitly use npx to run commands from root node_modules if PATH is not picking it up correctly
+RUN npm run build --workspaces --if-present
 
 # Runtime stage
 FROM node:20-bookworm-slim AS runtime

@@ -1,6 +1,7 @@
 {
   "name": "skull-king-monorepo",
   "version": "1.0.0",
+  "private": true,
   "description": "Skull King Game Monorepo",
   "workspaces": [
     "client",
