@@ -30,8 +30,8 @@ const GameRoom: React.FC = () => {
     players: Array<{ id: string; score: number; bid: number; tricksWon: number }>;
     round: number;
   } | null>(null);
-  // Save a snapshot of gameState when round_ended event arrives
   const [roundEndSnapshot, setRoundEndSnapshot] = useState<typeof gameState | null>(null);
+  const [previousPhase, setPreviousPhase] = useState<string | null>(null);
 
   if (!gameState) return <div>加载中...</div>;
 
@@ -40,21 +40,8 @@ const GameRoom: React.FC = () => {
     const startPlayer = roundStartState?.players.find(p => p.id === finalPlayer.id);
     const prevScore = startPlayer?.score || 0;
     const scoreChange = finalPlayer.score - prevScore;
-    const startBid = startPlayer?.bid;
+    const startBid = startPlayer?.bid ?? 0;
     const startTricksWon = startPlayer?.tricksWon ?? 0;
-    
-    // Safety check: if we don't have startBid, show default values
-    if (startBid === undefined || startBid === -1) {
-      return { 
-        prevScore, 
-        scoreChange, 
-        formula: '?', 
-        diff: 0, 
-        startBid: 0, 
-        actualTricksWon: 0 
-      };
-    }
-    
     const actualTricksWon = Math.max(0, finalPlayer.tricksWon - startTricksWon);
     const diff = Math.abs(startBid - actualTricksWon);
     
@@ -76,9 +63,10 @@ const GameRoom: React.FC = () => {
     return { prevScore, scoreChange, formula, diff, startBid, actualTricksWon };
   };
 
-  // Track round start state when round starts (bidding phase)
+  // Track round start state when phase changes from bidding to playing (all players have bid!)
   useEffect(() => {
-    if (gameState && gameState.phase === 'bidding') {
+    if (gameState && previousPhase === 'bidding' && gameState.phase === 'playing') {
+      // Perfect time to save! All bids are finalized!
       setRoundStartState({
         players: gameState.players.map(p => ({
           id: p.id,
@@ -89,7 +77,8 @@ const GameRoom: React.FC = () => {
         round: gameState.round
       });
     }
-  }, [gameState?.phase, gameState?.round]);
+    setPreviousPhase(gameState.phase);
+  }, [gameState?.phase, gameState?.round, gameState?.players]);
 
   // Set up socket listeners for trick/round end
   useEffect(() => {
@@ -414,15 +403,9 @@ const GameRoom: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="text-right font-mono">
-                                                <div className="text-sm text-slate-400">
-                                                    {prevScore} →
-                                                </div>
                                                 <div className="text-lg">
-                                                    {scoreChange > 0 && <span className="text-green-400">+{scoreChange}</span>}
-                                                    {scoreChange < 0 && <span className="text-red-400">{scoreChange}</span>}
-                                                    {scoreChange === 0 && <span className="text-slate-400">±0</span>}
+                                                    {prevScore} {scoreChange >= 0 ? '+' : ''}{scoreChange} = {player.score}
                                                 </div>
-                                                <div className="text-sm text-purple-400 font-bold">= {player.score}</div>
                                             </div>
                                         </div>
                                     );
