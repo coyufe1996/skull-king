@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 
 import { RoomManager } from './models/RoomManager';
 import { registerRoomHandlers } from './handlers/roomHandler';
@@ -13,17 +14,36 @@ dotenv.config();
 const app = express();
 app.use(cors());
 
+console.log('=== Server Starting ===');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('CLIENT_DIST_PATH:', process.env.CLIENT_DIST_PATH);
+console.log('Current working directory:', process.cwd());
+console.log('Directory contents:', fs.readdirSync(process.cwd()));
+
 // Serve static files from the React app only in production
 if (process.env.NODE_ENV === 'production') {
   const clientDistPath = process.env.CLIENT_DIST_PATH
     ? path.resolve(process.cwd(), process.env.CLIENT_DIST_PATH)
     : path.join(process.cwd(), '../client/dist');
     
+  console.log('Client dist path:', clientDistPath);
+  console.log('Client dist exists:', fs.existsSync(clientDistPath));
+  if (fs.existsSync(clientDistPath)) {
+    console.log('Client dist contents:', fs.readdirSync(clientDistPath));
+  }
+    
   app.use(express.static(clientDistPath));
 
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
+    const indexPath = path.join(clientDistPath, 'index.html');
+    console.log('Serving index.html from:', indexPath);
+    console.log('Index exists:', fs.existsSync(indexPath));
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Index.html not found at: ' + indexPath);
+    }
   });
 } else {
   app.get('/', (req, res) => {
