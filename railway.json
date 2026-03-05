@@ -1,0 +1,9 @@
+{
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "node server/dist/server/src/index.js",
+    "healthcheckPath": "/"
+  }
+}

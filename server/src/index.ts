@@ -22,29 +22,45 @@ console.log('Directory contents:', fs.readdirSync(process.cwd()));
 
 // Serve static files from the React app only in production
 if (process.env.NODE_ENV === 'production') {
-  const clientDistPath = process.env.CLIENT_DIST_PATH
-    ? path.resolve(process.cwd(), process.env.CLIENT_DIST_PATH)
-    : path.join(process.cwd(), '../client/dist');
-    
-  console.log('Client dist path:', clientDistPath);
-  console.log('Client dist exists:', fs.existsSync(clientDistPath));
-  if (fs.existsSync(clientDistPath)) {
+  let clientDistPath: string;
+  
+  // Try multiple possible paths to find client/dist
+  const possiblePaths = [
+    process.env.CLIENT_DIST_PATH ? path.resolve(process.cwd(), process.env.CLIENT_DIST_PATH) : null,
+    path.join(process.cwd(), '../client/dist'),
+    path.join(__dirname, '../../../client/dist'),
+    path.join('/app/client/dist')
+  ].filter(Boolean) as string[];
+  
+  console.log('Trying possible client dist paths:', possiblePaths);
+  
+  clientDistPath = possiblePaths.find(p => fs.existsSync(p)) || '';
+  
+  console.log('Client dist path found:', clientDistPath);
+  console.log('Client dist exists:', clientDistPath && fs.existsSync(clientDistPath));
+  if (clientDistPath && fs.existsSync(clientDistPath)) {
     console.log('Client dist contents:', fs.readdirSync(clientDistPath));
   }
     
-  app.use(express.static(clientDistPath));
+  if (clientDistPath) {
+    app.use(express.static(clientDistPath));
 
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    const indexPath = path.join(clientDistPath, 'index.html');
-    console.log('Serving index.html from:', indexPath);
-    console.log('Index exists:', fs.existsSync(indexPath));
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(404).send('Index.html not found at: ' + indexPath);
-    }
-  });
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+      const indexPath = path.join(clientDistPath, 'index.html');
+      console.log('Serving index.html from:', indexPath);
+      console.log('Index exists:', fs.existsSync(indexPath));
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send('Index.html not found at: ' + indexPath);
+      }
+    });
+  } else {
+    app.get('*', (req, res) => {
+      res.status(404).send('Client dist not found. Tried paths: ' + possiblePaths.join(', '));
+    });
+  }
 } else {
   app.get('/', (req, res) => {
     res.send('Skull King Server is running in Development Mode');
