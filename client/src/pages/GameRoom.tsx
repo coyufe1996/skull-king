@@ -30,6 +30,30 @@ const GameRoom: React.FC = () => {
 
   if (!gameState) return <div>加载中...</div>;
 
+  // Helper to calculate score change and formula
+  const getScoreInfo = (player: typeof gameState.players[0], roundNum: number) => {
+    const prevScore = roundStartScores[player.id] || 0;
+    const scoreChange = player.score - prevScore;
+    const diff = Math.abs(player.bid - player.tricksWon);
+    
+    let formula = '';
+    if (player.bid === 0) {
+      if (player.tricksWon === 0) {
+        formula = `${roundNum} × 10`;
+      } else {
+        formula = `-${roundNum} × 10`;
+      }
+    } else {
+      if (player.bid === player.tricksWon) {
+        formula = `${player.tricksWon} × 20`;
+      } else {
+        formula = `-${diff} × 10`;
+      }
+    }
+    
+    return { prevScore, scoreChange, formula, diff };
+  };
+
   // Track round start scores when round starts (bidding phase)
   useEffect(() => {
     if (gameState && gameState.phase === 'bidding') {
@@ -49,6 +73,17 @@ const GameRoom: React.FC = () => {
       setTrickWinner(winnerId);
       setTrickCards(tableCards);
       setShowTrickEndModal(true);
+      
+      // Check if this is the last trick (hand will be empty after this)
+      // Save current scores now before they get updated in the next step
+      const currentPlayer = gameState.players.find(p => p.name === playerName);
+      if (currentPlayer && currentPlayer.hand.length === 1) {
+        const scores: Record<string, number> = {};
+        gameState.players.forEach(p => {
+          scores[p.id] = p.score;
+        });
+        setRoundStartScores(scores);
+      }
     };
 
     const onRoundEnded = (_room: GameState) => {
@@ -67,7 +102,7 @@ const GameRoom: React.FC = () => {
       socket.off('trick_end', onTrickEnd);
       socket.off('round_ended', onRoundEnded);
     };
-  }, [socket, showTrickEndModal]);
+  }, [socket, showTrickEndModal, gameState, playerName]);
 
   // Handle trick end modal close
   const handleTrickEndClose = () => {
@@ -340,8 +375,8 @@ const GameRoom: React.FC = () => {
                             {[...gameState.players]
                                 .sort((a, b) => b.score - a.score)
                                 .map((player, rank) => {
-                                    const prevScore = roundStartScores[player.id] || 0;
-                                    const scoreChange = player.score - prevScore;
+                                    const currentRound = gameState.round - 1;
+                                    const { prevScore, scoreChange, formula, diff } = getScoreInfo(player, currentRound);
                                     const madeBid = player.tricksWon === player.bid;
                                     return (
                                         <div key={player.id} className={`flex justify-between items-center p-4 rounded-lg ${madeBid ? 'bg-green-900/30 border border-green-700' : 'bg-red-900/30 border border-red-700'}`}>
@@ -355,17 +390,23 @@ const GameRoom: React.FC = () => {
                                                     <div className="text-xs text-slate-400">
                                                         叫分: <span className="text-yellow-400 font-bold">{player.bid}</span> | 
                                                         赢得: <span className="text-green-400 font-bold">{player.tricksWon}</span>
-                                                        {!madeBid && <span className="text-red-400 ml-2">(差 {Math.abs(player.bid - player.tricksWon)} 墩)</span>}
+                                                        {!madeBid && <span className="text-red-400 ml-2">(差 {diff} 墩)</span>}
+                                                    </div>
+                                                    <div className="text-xs text-slate-500 font-mono mt-1">
+                                                        算分: {formula}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="text-right font-mono">
+                                                <div className="text-sm text-slate-400">
+                                                    {prevScore} →
+                                                </div>
                                                 <div className="text-lg">
                                                     {scoreChange > 0 && <span className="text-green-400">+{scoreChange}</span>}
                                                     {scoreChange < 0 && <span className="text-red-400">{scoreChange}</span>}
                                                     {scoreChange === 0 && <span className="text-slate-400">±0</span>}
                                                 </div>
-                                                <div className="text-sm text-purple-400">总分: {player.score}</div>
+                                                <div className="text-sm text-purple-400 font-bold">= {player.score}</div>
                                             </div>
                                         </div>
                                     );
